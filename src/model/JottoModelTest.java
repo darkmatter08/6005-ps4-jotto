@@ -136,4 +136,20 @@ public class JottoModelTest {
             fail(e.getMessage());
         }
     }
+    
+    @Test
+    public void guessWithAsteriskTest() {
+        JottoModel jm = new JottoModel(16952);
+        try {
+            jm.makeGuess("may*e");
+            assertEquals(jm.getLastGuessCommonResult(), "1");
+            assertEquals(jm.getLastGuessCorrectPos(), "1");
+        } catch (InvalidGuessException e) {
+            e.printStackTrace();
+            fail(e.getMessage());  
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
+    }
 }
