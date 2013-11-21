@@ -37,6 +37,7 @@ public class JottoGUI extends JFrame {
     
     private final GroupLayout layout;
     private final JLabel guessLabel;
+    private final JottoTableModel tm;
     
     private JottoModel model = new JottoModel();
 
@@ -59,7 +60,7 @@ public class JottoGUI extends JFrame {
         
         puzzleNumber = new JLabel();
         puzzleNumber.setName("puzzleNumber");
-        puzzleNumber.setText("Puzzle Number: Random!");
+        puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
         
         guess = new JTextField(5);
         guess.setName("guess");
@@ -69,7 +70,7 @@ public class JottoGUI extends JFrame {
         
 //        Object[] headers = {"Guess", "Correct Position", "Common Characters"};
 //        Object[][] data = {{"blank0"}, {"blank1"}, {"blank2"}};
-        final JottoTableModel tm = new JottoTableModel();
+        tm = new JottoTableModel();
         guessTable = new JTable(tm);
         guessTable.setName("guessTable");
         //guessTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
@@ -85,31 +86,13 @@ public class JottoGUI extends JFrame {
          */
         newPuzzleButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                String puzzleString = newPuzzleNumber.getText();
-                if (puzzleString == null || puzzleString.equals("")) {
-                    model = new JottoModel();
-                    puzzleNumber.setText("Puzzle Number: Random!");
-                    tm.clearTable();
-                } else {
-                    try{
-                        int puzzle = Integer.parseInt(puzzleString);
-                        if (puzzle >= 0) {
-                            model = new JottoModel(puzzle);
-                            puzzleNumber.setText("Puzzle Number: " + Integer.toString(puzzle));
-                            tm.clearTable();
-                        }
-                        else { // bad input
-                            model = new JottoModel();
-                            puzzleNumber.setText("Puzzle Number: " + " Random!");
-                        }
-                        
-                    } catch (NumberFormatException ne) {
-                        showDialog("Bad Puzzle Number Input", "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                        ne.printStackTrace();
-                        newPuzzleNumber.setText("");
-                        return;
-                    }
-                } 
+                newPuzzleButtonHelper();
+            }
+        });
+        
+        newPuzzleNumber.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                newPuzzleButtonHelper();
             }
         });
         
@@ -128,6 +111,7 @@ public class JottoGUI extends JFrame {
                         String userGuess = guess.getText();
                         guess.setText(""); // reset box to empty
                         int index = tm.addGuessRow(userGuess, null);
+                        onTableUpdate();
                         try {
                             newModel.makeGuess(userGuess);
                         } catch (InvalidGuessException ige) {
@@ -144,7 +128,7 @@ public class JottoGUI extends JFrame {
                             model = new JottoModel();
                             tm.clearTable();
                             return;
-                        }catch (IOException e1) {
+                        } catch (IOException e1) {
                             showDialog(e1.getMessage(), 
                                     "JottoGame Error", JOptionPane.ERROR_MESSAGE);
                             e1.printStackTrace();
@@ -154,17 +138,21 @@ public class JottoGUI extends JFrame {
                         String commonResult = newModel.getLastGuessCommonResult();
                         // Winning condition check
                         if (correctPos.equals("5") && commonResult.equals("5")) {
-                            showDialog("You win! The secret was: " + userGuess + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
                             tm.editGuessRow(index, "You Win!");
+                            onTableUpdate();
+                            showDialog("You win! The secret was: " + userGuess + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
                         }
-                        else
+                        else{
                             tm.editGuessRow(index, newModel.getLastGuessCorrectPos(), newModel.getLastGuessCommonResult());
-                        onTableUpdate(); // resize JTable
+                            onTableUpdate();
                         }
+                    }
                 }.start();
             }
         });
-        
+        //TODO new puzzle button doesn't clear table //done
+        //TODO newPuzzleNumber enter should trigger new puzzle //done
+        //TODO lock on tableModel
         
         // LAYOUT 
         layout.setVerticalGroup(
@@ -228,6 +216,37 @@ public class JottoGUI extends JFrame {
      */
     private void showDialog(String message, String title, int messageType) {
         JOptionPane.showMessageDialog(this, message, title, messageType);
+    }
+    
+    private void newPuzzleButtonHelper() {
+        String puzzleString = newPuzzleNumber.getText();
+        newPuzzleNumber.setText("");
+        if (puzzleString == null || puzzleString.equals("")) {
+            model = new JottoModel();
+            puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
+            tm.clearTable();
+            onTableUpdate();
+        } else {
+            try{
+                int puzzle = Integer.parseInt(puzzleString);
+                if (puzzle >= 0) {
+                    model = new JottoModel(puzzle);
+                    puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
+                    tm.clearTable();
+                    onTableUpdate();
+                }
+                else { // bad input
+                    model = new JottoModel();
+                    puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
+                }
+                
+            } catch (NumberFormatException ne) {
+                showDialog("Bad Puzzle Number Input", "JottoGame Error", JOptionPane.ERROR_MESSAGE);
+                ne.printStackTrace();
+                newPuzzleNumber.setText("");
+                return;
+            }
+        }
     }
 
     public static void main(final String[] args) {
@@ -310,11 +329,15 @@ class JottoTableModel extends AbstractTableModel {
     }
     
     public void editGuessRow(int index, String correctPos, String commonResult) {
-        data.get(index).set(1, correctPos);
-        if (commonResult != null)
-            data.get(index).set(2, commonResult); // 
-        else
-            data.get(index).set(2, "");
+        // check if that row still exists, and if so, update it, otherwise 
+        // do nothing for this edit request
+        if (data.size() > index) {
+            data.get(index).set(1, correctPos);
+            if (commonResult != null)
+                data.get(index).set(2, commonResult); // 
+            else
+                data.get(index).set(2, "");
+        } 
     }
     
     public void editGuessRow(int index, String col2) {
@@ -325,8 +348,8 @@ class JottoTableModel extends AbstractTableModel {
      * Deletes all table data except the header row
      */
     public void clearTable() {
-        for (int i = 1; i < data.size(); i++) { // TODO does it check the condition before running the loop? - yes
-            data.remove(i);
-        }
+        data = new ArrayList<List<String>>();
+        addGuessRow("Guess", "Correct Positions", "Common Characters");
     }
 }
+
