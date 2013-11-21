@@ -23,18 +23,28 @@ public class JottoModel {
      * Constructor to select a predetermined puzzle
      * @param puzzle int representing a puzzle number (on server)
      */
-    JottoModel(int puzzle) {
+    public JottoModel(int puzzle) {
         String BASE_URL = "http://courses.csail.mit.edu/6.005/jotto.py?";
         String PUZZLE_QS = "puzzle=";
         String GUESS_QS = "&guess=";
         GAME_URL = BASE_URL + PUZZLE_QS + new Integer(puzzle).toString() + GUESS_QS;
+        
+        
+        // check that the puzzle they provided is valid, otherwise pass the  
+        // PuzzleIdException or IOException up the stack. This way the public
+        // makeGuess method will only generally throw a PuzzleIdException 
+        // and maybe an IOException if there's a network error, not due to
+        // a malformed URL
+//        makeGuess("tests");
+//        lastGuessCorrectPos = null;
+//        lastGuessCommonResult = null;
     }
     
     /**
      * Tests a guess against the real Jotto word. Can check the results of the
      *  guess via the getLastGuessCorrectPos() and the getLastGuessCommonResult()
      * @param String guess the guess to be tested against the real value
-     * @throws IOException 
+     * @throws IOException, PuzzleIdException, InvalidGuessException
      */
     public void makeGuess(String guess) throws IOException {
         URL finalURL = new URL(GAME_URL + guess);
@@ -87,30 +97,3 @@ public class JottoModel {
     }
 }
 
-/**
- * PuzzleIDException represents an exception relating strictly to an invalid puzzle ID
- * Package-Private since it's only used by classes in this package, and 
- * written inline since it relates closely to the makeGuess() method in JottoModel
- * @author jains
- *
- */
-class PuzzleIdException extends IOException { 
-    PuzzleIdException(String s) { 
-        super(s);
-    }
-}
-
-/**
- * InvalidGuessException represents an exception relating strictly to an invalid 
- * guess passed into makeGuess(). Extends RuntimeException since the guess's validity
- * is the responsbility of the client. 
- * Package-Private since it's only used by classes in this package, and 
- * written inline since it relates closely to the makeGuess() method in JottoModel
- * @author jains
- *
- */
-class InvalidGuessException extends RuntimeException{
-    InvalidGuessException(String s) {
-        super(s);
-    }
-}
