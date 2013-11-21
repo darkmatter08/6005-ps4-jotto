@@ -115,7 +115,7 @@ public class JottoGUI extends JFrame {
                         try {
                             newModel.makeGuess(userGuess);
                         } catch (InvalidGuessException ige) {
-                            ige.printStackTrace();
+                            //ige.printStackTrace();
                             // Check to make sure a new puzzle hasn't been loaded
                             if (newModel.getPuzzleId() == model.getPuzzleId()) { 
                                 tm.editGuessRow(index, "Invalid Guess");
@@ -125,7 +125,7 @@ public class JottoGUI extends JFrame {
                             //tm.addGuessRow("Invalid Guess", null);
                             return;
                         } catch (PuzzleIdException pie){
-                            pie.printStackTrace();
+                            //pie.printStackTrace();
                             showDialog(pie.getMessage() + "\r\n A new puzzle has been loaded", 
                                     "JottoGame Error", JOptionPane.ERROR_MESSAGE);
                             model = new JottoModel();
@@ -134,7 +134,7 @@ public class JottoGUI extends JFrame {
                         } catch (IOException e1) {
                             showDialog(e1.getMessage(), 
                                     "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                            e1.printStackTrace();
+                            //e1.printStackTrace();
                             return;
                         }
                         String correctPos = newModel.getLastGuessCorrectPos();
@@ -251,7 +251,7 @@ public class JottoGUI extends JFrame {
                 
             } catch (NumberFormatException ne) {
                 showDialog("Bad Puzzle Number Input", "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                ne.printStackTrace();
+                //ne.printStackTrace();
                 newPuzzleNumber.setText("");
                 return;
             }
