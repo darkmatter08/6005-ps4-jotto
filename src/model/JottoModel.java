@@ -11,6 +11,7 @@ public class JottoModel {
     final private String GAME_URL;
     private String lastGuessCorrectPos;
     private String lastGuessCommonResult;
+    private int puzzleId;
     
     /**
      * Constructor to select random puzzle
@@ -24,6 +25,7 @@ public class JottoModel {
      * @param puzzle int representing a puzzle number (on server)
      */
     public JottoModel(int puzzle) {
+        puzzleId = puzzle;
         String BASE_URL = "http://courses.csail.mit.edu/6.005/jotto.py?";
         String PUZZLE_QS = "puzzle=";
         String GUESS_QS = "&guess=";
@@ -94,6 +96,10 @@ public class JottoModel {
         if (lastGuessCorrectPos == null)
             throw new RuntimeException("incorrect call order");
         return lastGuessCommonResult;
+    }
+    
+    public int getPuzzleId() {
+        return puzzleId;
     }
 }
 

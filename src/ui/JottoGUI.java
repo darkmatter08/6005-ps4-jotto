@@ -122,36 +122,46 @@ public class JottoGUI extends JFrame {
          */
         guess.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                try {
-                    model.makeGuess(guess.getText());
-                } catch (InvalidGuessException ige) {
-                    ige.printStackTrace();
-                    showDialog(ige.getMessage(), "JottoGame Message", JOptionPane.ERROR_MESSAGE);
-                    tm.addGuessRow("Invalid Guess", null);
-                    onTableUpdate();
-                    return;
-                } catch (PuzzleIdException pie){
-                    pie.printStackTrace();
-                    showDialog(pie.getMessage() + "\r\n A new puzzle has been loaded", 
-                            "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                    model = new JottoModel();
-                    tm.clearTable();
-                }catch (IOException e1) {
-                    showDialog(e1.getMessage(), 
-                            "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                    e1.printStackTrace();
-                }
-                String correctPos = model.getLastGuessCorrectPos();
-                String commonResult = model.getLastGuessCommonResult();
-                // Winning condition check
-                if (correctPos.equals("5") && commonResult.equals("5")) {
-                    showDialog("You win! The secret was: " + guess.getText() + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
-                    tm.addGuessRow(guess.getText(), "You Win!");
-                }
-                else
-                    tm.addGuessRow(guess.getText(), model.getLastGuessCorrectPos(), model.getLastGuessCommonResult());
-                guess.setText(""); // reset box to empty
-                onTableUpdate(); // resize JTable
+                new Thread() {
+                    public void run() {
+                        JottoModel newModel = new JottoModel(model.getPuzzleId());
+                        String userGuess = guess.getText();
+                        guess.setText(""); // reset box to empty
+                        int index = tm.addGuessRow(userGuess, null);
+                        try {
+                            newModel.makeGuess(userGuess);
+                        } catch (InvalidGuessException ige) {
+                            ige.printStackTrace();
+                            tm.editGuessRow(index, "Invalid Guess");
+                            onTableUpdate();
+                            showDialog(ige.getMessage(), "JottoGame Message", JOptionPane.ERROR_MESSAGE);
+                            //tm.addGuessRow("Invalid Guess", null);
+                            return;
+                        } catch (PuzzleIdException pie){
+                            pie.printStackTrace();
+                            showDialog(pie.getMessage() + "\r\n A new puzzle has been loaded", 
+                                    "JottoGame Error", JOptionPane.ERROR_MESSAGE);
+                            model = new JottoModel();
+                            tm.clearTable();
+                            return;
+                        }catch (IOException e1) {
+                            showDialog(e1.getMessage(), 
+                                    "JottoGame Error", JOptionPane.ERROR_MESSAGE);
+                            e1.printStackTrace();
+                            return;
+                        }
+                        String correctPos = newModel.getLastGuessCorrectPos();
+                        String commonResult = newModel.getLastGuessCommonResult();
+                        // Winning condition check
+                        if (correctPos.equals("5") && commonResult.equals("5")) {
+                            showDialog("You win! The secret was: " + userGuess + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
+                            tm.editGuessRow(index, "You Win!");
+                        }
+                        else
+                            tm.editGuessRow(index, newModel.getLastGuessCorrectPos(), newModel.getLastGuessCommonResult());
+                        onTableUpdate(); // resize JTable
+                        }
+                }.start();
             }
         });
         
@@ -299,13 +309,23 @@ class JottoTableModel extends AbstractTableModel {
         return addGuessRow(guess, Integer.toString(correctPos), Integer.toString(commonResult));
     }
     
-    //public void editGuessRow(int index) {}
+    public void editGuessRow(int index, String correctPos, String commonResult) {
+        data.get(index).set(1, correctPos);
+        if (commonResult != null)
+            data.get(index).set(2, commonResult); // 
+        else
+            data.get(index).set(2, "");
+    }
+    
+    public void editGuessRow(int index, String col2) {
+        editGuessRow(index, col2, null);
+    }
     
     /**
      * Deletes all table data except the header row
      */
     public void clearTable() {
-        for (int i = 1; i < data.size(); i++) { // TODO does it check the condition before running the loop?
+        for (int i = 1; i < data.size(); i++) { // TODO does it check the condition before running the loop? - yes
             data.remove(i);
         }
     }
