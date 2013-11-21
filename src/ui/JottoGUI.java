@@ -12,6 +12,7 @@ import javax.swing.GroupLayout.Group;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
@@ -87,15 +88,25 @@ public class JottoGUI extends JFrame {
                 String puzzleString = newPuzzleNumber.getText();
                 if (puzzleString == null || puzzleString.equals("")) {
                     model = new JottoModel();
-                    puzzleNumber.setText("Puzzle Number: " + " Random!");
+                    puzzleNumber.setText("Puzzle Number: Random!");
+                    tm.clearTable();
                 } else {
                     try{
                         int puzzle = Integer.parseInt(puzzleString);
-                        model = new JottoModel(puzzle);
-                        puzzleNumber.setText("Puzzle Number: " + Integer.toString(puzzle));
+                        if (puzzle >= 0) {
+                            model = new JottoModel(puzzle);
+                            puzzleNumber.setText("Puzzle Number: " + Integer.toString(puzzle));
+                            tm.clearTable();
+                        }
+                        else { // bad input
+                            model = new JottoModel();
+                            puzzleNumber.setText("Puzzle Number: " + " Random!");
+                        }
+                        
                     } catch (NumberFormatException ne) {
-                        // show an error window
+                        showDialog("Bad Puzzle Number Input", "JottoGame Error", JOptionPane.ERROR_MESSAGE);
                         ne.printStackTrace();
+                        newPuzzleNumber.setText("");
                         return;
                     }
                 } 
@@ -115,16 +126,30 @@ public class JottoGUI extends JFrame {
                     model.makeGuess(guess.getText());
                 } catch (InvalidGuessException ige) {
                     ige.printStackTrace();
-                    // update table to show thread. 
+                    showDialog(ige.getMessage(), "JottoGame Message", JOptionPane.ERROR_MESSAGE);
+                    tm.addGuessRow("Invalid Guess", null);
+                    onTableUpdate();
+                    return;
                 } catch (PuzzleIdException pie){
                     pie.printStackTrace();
-                    // show error window
-                    // update table to clear
+                    showDialog(pie.getMessage() + "\r\n A new puzzle has been loaded", 
+                            "JottoGame Error", JOptionPane.ERROR_MESSAGE);
+                    model = new JottoModel();
+                    tm.clearTable();
                 }catch (IOException e1) {
-                    // TODO Auto-generated catch block
+                    showDialog(e1.getMessage(), 
+                            "JottoGame Error", JOptionPane.ERROR_MESSAGE);
                     e1.printStackTrace();
                 }
-                tm.addGuessRow(guess.getText(), model.getLastGuessCorrectPos(), model.getLastGuessCommonResult());
+                String correctPos = model.getLastGuessCorrectPos();
+                String commonResult = model.getLastGuessCommonResult();
+                // Winning condition check
+                if (correctPos.equals("5") && commonResult.equals("5")) {
+                    showDialog("You win! The secret was: " + guess.getText() + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
+                    tm.addGuessRow(guess.getText(), "You Win!");
+                }
+                else
+                    tm.addGuessRow(guess.getText(), model.getLastGuessCorrectPos(), model.getLastGuessCommonResult());
                 guess.setText(""); // reset box to empty
                 onTableUpdate(); // resize JTable
             }
@@ -176,9 +201,23 @@ public class JottoGUI extends JFrame {
         this.pack();
     }
     
-    public void onTableUpdate() {
+    /**
+     * Updates window and component sizes, called after adding a row
+     *  to the guessTable. 
+     */
+    private void onTableUpdate() {
         this.pack();
         this.setSize(400, 300);
+    }
+    
+    /**
+     * Shows a dialog to the user.
+     * @param message String message to be shown
+     * @param title String title to be shown in the titlebar
+     * @param messageType int representing messageType. Must be from JOptionPane.*
+     */
+    private void showDialog(String message, String title, int messageType) {
+        JOptionPane.showMessageDialog(this, message, title, messageType);
     }
 
     public static void main(final String[] args) {
@@ -192,6 +231,11 @@ public class JottoGUI extends JFrame {
     }
 }
 
+/**
+ * Table Model for the guessTable. Dynamically sized. 
+ * @author jains
+ *
+ */
 class JottoTableModel extends AbstractTableModel {
     private List<List<String>> data = new ArrayList<List<String>>();
     
@@ -213,20 +257,56 @@ class JottoTableModel extends AbstractTableModel {
     }
     
     /**
-     * @return int index of row
+     * Shortcut method for addGuessRow, only 1 or 2 entries
+     * @param guess col1 String
+     * @param col2 String, ok to be null if you only want 1 entry
+     * @return int index of row added
+     */
+    public int addGuessRow(String guess, String col2) {
+        return addGuessRow(guess, col2, null);
+    }
+    
+    /**
+     * Adds in a new row
+     * @param guess col1 String
+     * @param correctPos col2 String
+     * @param commonResult col3 String
+     * @return int index of row added
      */
     public int addGuessRow(String guess, String correctPos, String commonResult) {
         List<String> row = new ArrayList<String>();
         row.add(guess);
-        row.add(correctPos);
-        row.add(commonResult);
+        if (correctPos != null)
+            row.add(correctPos);
+        else
+            row.add("");
+        if (commonResult != null)
+            row.add(commonResult);
+        else
+            row.add("");
         data.add(row);
         return data.size()-1;
     }
     
+    /**
+     * Shortcut method for addGuessRow
+     * @param guess col1 String
+     * @param correctPos col2 int
+     * @param commonResult col3 int
+     * @return int index of row added
+     */
     public int addGuessRow(String guess, int correctPos, int commonResult) {
         return addGuessRow(guess, Integer.toString(correctPos), Integer.toString(commonResult));
     }
     
     //public void editGuessRow(int index) {}
+    
+    /**
+     * Deletes all table data except the header row
+     */
+    public void clearTable() {
+        for (int i = 1; i < data.size(); i++) { // TODO does it check the condition before running the loop?
+            data.remove(i);
+        }
+    }
 }
