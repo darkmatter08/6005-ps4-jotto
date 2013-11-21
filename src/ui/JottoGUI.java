@@ -116,9 +116,12 @@ public class JottoGUI extends JFrame {
                             newModel.makeGuess(userGuess);
                         } catch (InvalidGuessException ige) {
                             ige.printStackTrace();
-                            tm.editGuessRow(index, "Invalid Guess");
-                            onTableUpdate();
-                            showDialog(ige.getMessage(), "JottoGame Message", JOptionPane.ERROR_MESSAGE);
+                            // Check to make sure a new puzzle hasn't been loaded
+                            if (newModel.getPuzzleId() == model.getPuzzleId()) { 
+                                tm.editGuessRow(index, "Invalid Guess");
+                                onTableUpdate();
+                                showDialog(ige.getMessage(), "JottoGame Message", JOptionPane.ERROR_MESSAGE);
+                            }
                             //tm.addGuessRow("Invalid Guess", null);
                             return;
                         } catch (PuzzleIdException pie){
@@ -138,13 +141,17 @@ public class JottoGUI extends JFrame {
                         String commonResult = newModel.getLastGuessCommonResult();
                         // Winning condition check
                         if (correctPos.equals("5") && commonResult.equals("5")) {
-                            tm.editGuessRow(index, "You Win!");
-                            onTableUpdate();
-                            showDialog("You win! The secret was: " + userGuess + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
+                            if (newModel.getPuzzleId() == model.getPuzzleId()) {
+                                tm.editGuessRow(index, "You Win!");
+                                onTableUpdate();
+                                showDialog("You win! The secret was: " + userGuess + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
+                            }
                         }
                         else{
-                            tm.editGuessRow(index, newModel.getLastGuessCorrectPos(), newModel.getLastGuessCommonResult());
-                            onTableUpdate();
+                            if (newModel.getPuzzleId() == model.getPuzzleId()) {
+                                tm.editGuessRow(index, newModel.getLastGuessCorrectPos(), newModel.getLastGuessCommonResult());
+                                onTableUpdate();
+                            }
                         }
                     }
                 }.start();
@@ -153,6 +160,8 @@ public class JottoGUI extends JFrame {
         //TODO new puzzle button doesn't clear table //done
         //TODO newPuzzleNumber enter should trigger new puzzle //done
         //TODO lock on tableModel
+        //TODO make sure that when we're dealing with the table (after the possible blocking 
+        //      operation of makeGuess()) the puzzle is still the same. //done  
         
         // LAYOUT 
         layout.setVerticalGroup(
