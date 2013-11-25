@@ -39,7 +39,7 @@ public class JottoGUI extends JFrame {
     private final JLabel guessLabel;
     private final JottoTableModel tm;
     
-    private JottoModel model = new JottoModel();
+    private JottoModel model;
 
     public JottoGUI() {
         super("Jotto on csail.mit");
@@ -49,6 +49,8 @@ public class JottoGUI extends JFrame {
         cp.setLayout(layout);
         layout.setAutoCreateGaps(true);
         layout.setAutoCreateContainerGaps(true);
+        
+        model = new JottoModel();
         
         newPuzzleButton = new JButton();
         newPuzzleButton.setName("newPuzzleButton");
@@ -68,14 +70,10 @@ public class JottoGUI extends JFrame {
         guessLabel = new JLabel("Type a guess here:");
         guessLabel.setLabelFor(guess);
         
-//        Object[] headers = {"Guess", "Correct Position", "Common Characters"};
-//        Object[][] data = {{"blank0"}, {"blank1"}, {"blank2"}};
         tm = new JottoTableModel();
         guessTable = new JTable(tm);
         guessTable.setName("guessTable");
         //guessTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        
-        // TODO Problem 2, 3, 4, and 5
         
         // REGISTER LISTENERS
 
@@ -99,9 +97,10 @@ public class JottoGUI extends JFrame {
         /*
          * When enter is pressed on the guess JTextField, make a guess on the 
          * JottoModel with the contents of the textField. Display errors on the 
-         * table when a guess is invalid by catching the errors makeGuess throws.
+         * table when a guess is invalid by catching the exceptions makeGuess throws.
          * 
-         * If the guess is correct, alert the user and reset the game. 
+         * If the guess is correct, alert the user with a new window and by placing it
+         * in the table, then reset the game. 
          */
         guess.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -115,7 +114,6 @@ public class JottoGUI extends JFrame {
                         try {
                             newModel.makeGuess(userGuess);
                         } catch (InvalidGuessException ige) {
-                            //ige.printStackTrace();
                             // Check to make sure a new puzzle hasn't been loaded
                             if (newModel.getPuzzleId() == model.getPuzzleId()) { 
                                 tm.editGuessRow(index, "Invalid Guess");
@@ -125,7 +123,6 @@ public class JottoGUI extends JFrame {
                             //tm.addGuessRow("Invalid Guess", null);
                             return;
                         } catch (PuzzleIdException pie){
-                            //pie.printStackTrace();
                             showDialog(pie.getMessage() + "\r\n A new puzzle has been loaded", 
                                     "JottoGame Error", JOptionPane.ERROR_MESSAGE);
                             model = new JottoModel();
@@ -134,14 +131,14 @@ public class JottoGUI extends JFrame {
                         } catch (IOException e1) {
                             showDialog(e1.getMessage(), 
                                     "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                            //e1.printStackTrace();
                             return;
                         }
                         String correctPos = newModel.getLastGuessCorrectPos();
                         String commonResult = newModel.getLastGuessCommonResult();
                         // Winning condition check
                         if (correctPos.equals("5") && commonResult.equals("5")) {
-                            if (newModel.getPuzzleId() == model.getPuzzleId()) {
+                            // Checking if we're still in the same game.
+                            if (newModel.getPuzzleId() == model.getPuzzleId()) { 
                                 tm.editGuessRow(index, "You Win!");
                                 onTableUpdate();
                                 showDialog("You win! The secret was: " + userGuess + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
@@ -175,7 +172,6 @@ public class JottoGUI extends JFrame {
                 layout.createParallelGroup(GroupLayout.Alignment.BASELINE) // TODO remove for table fix
                     .addComponent(guessLabel)
                     .addComponent(guess)
-                    //.addComponent(guessTable)
             ).addGroup(
                 layout.createParallelGroup(GroupLayout.Alignment.LEADING)
                     .addComponent(guessTable)
@@ -279,7 +275,7 @@ class JottoTableModel extends AbstractTableModel {
     
     public JottoTableModel(){
         super();
-        addGuessRow("Guess", "Correct Positions", "Common Characters");
+        addGuessRow("Guess", "Common Characters", "Correct Positions");
     }
     
     public int getRowCount() {
@@ -314,12 +310,12 @@ class JottoTableModel extends AbstractTableModel {
     public int addGuessRow(String guess, String correctPos, String commonResult) {
         List<String> row = new ArrayList<String>();
         row.add(guess);
-        if (correctPos != null)
-            row.add(correctPos);
-        else
-            row.add("");
         if (commonResult != null)
             row.add(commonResult);
+        else
+            row.add("");
+        if (correctPos != null)
+            row.add(correctPos);
         else
             row.add("");
         data.add(row);
@@ -341,16 +337,16 @@ class JottoTableModel extends AbstractTableModel {
         // check if that row still exists, and if so, update it, otherwise 
         // do nothing for this edit request
         if (data.size() > index) {
-            data.get(index).set(1, correctPos);
+            data.get(index).set(2, correctPos);
             if (commonResult != null)
-                data.get(index).set(2, commonResult); // 
+                data.get(index).set(1, commonResult); 
             else
-                data.get(index).set(2, "");
+                data.get(index).set(1, "");
         } 
     }
     
     public void editGuessRow(int index, String col2) {
-        editGuessRow(index, col2, null);
+        editGuessRow(index, null, col2);
     }
     
     /**
@@ -358,7 +354,7 @@ class JottoTableModel extends AbstractTableModel {
      */
     public void clearTable() {
         data = new ArrayList<List<String>>();
-        addGuessRow("Guess", "Correct Positions", "Common Characters");
+        addGuessRow("Guess", "Common Characters", "Correct Positions");
     }
 }
 

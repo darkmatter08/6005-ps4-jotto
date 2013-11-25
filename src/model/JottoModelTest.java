@@ -30,11 +30,8 @@ public class JottoModelTest {
             e.printStackTrace();
             fail(e.getMessage());
         }
-    }
-    
-    @Test
-    public void connectToServerTest2() {
-        JottoModel jm = new JottoModel(2015);
+        
+        jm = new JottoModel(2015);
         try {
             jm.makeGuess("rucks");
             assertEquals(jm.getLastGuessCommonResult(), "5");
@@ -45,18 +42,10 @@ public class JottoModelTest {
         }
     }
     
-    @Test
-    public void invalidPuzzleTest() {
+    @Test(expected = PuzzleIdException.class)
+    public void invalidPuzzleTest() throws PuzzleIdException, IOException{
         JottoModel jm = new JottoModel(-1);
-        try {
-            jm.makeGuess("rucks");
-        } catch (PuzzleIdException e) {
-            // Expected behavior - pass
-            // assertEquals(e.getMessage(), "Non-number puzzle ID"); 
-        } catch (IOException e) {
-            e.printStackTrace();
-            fail(e.getMessage());
-        }
+        jm.makeGuess("rucks");
     }
     
     @Test
