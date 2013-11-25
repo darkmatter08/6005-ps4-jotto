@@ -35,7 +35,7 @@ public class JottoGUI extends JFrame {
     private final JTextField guess;
     private final JTable guessTable;
     
-    private final GroupLayout layout;
+    //private final GroupLayout layout;
     private final JLabel guessLabel;
     private final JottoTableModel tm;
     
@@ -45,10 +45,8 @@ public class JottoGUI extends JFrame {
         super("Jotto on csail.mit");
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
         Container cp = this.getContentPane();
-        layout = new GroupLayout(cp);
+        GroupLayout layout = new GroupLayout(cp);
         cp.setLayout(layout);
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
         
         model = new JottoModel();
         
@@ -58,7 +56,6 @@ public class JottoGUI extends JFrame {
         
         newPuzzleNumber = new JTextField();
         newPuzzleNumber.setName("newPuzzleNumber");
-        //newPuzzleNumber.setText("puzzle number");
         
         puzzleNumber = new JLabel();
         puzzleNumber.setName("puzzleNumber");
@@ -89,77 +86,26 @@ public class JottoGUI extends JFrame {
             }
         });
         
-        /*
-         * When enter is pressed on the guess JTextField, make a guess on the 
-         * JottoModel with the contents of the textField. Display errors on the 
-         * table when a guess is invalid by catching the exceptions makeGuess throws.
-         * 
-         * If the guess is correct, alert the user with a new window and by placing it
-         * in the table, then reset the game. 
-         */
         guess.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                new Thread() {
-                    public void run() {
-                        JottoModel modelForGuess = new JottoModel(model.getPuzzleId());
-                        String userGuess = guess.getText();
-                        guess.setText(""); // reset box to empty
-                        int index = tm.addGuessRow(userGuess, null);
-                        onTableUpdate();
-                        try {
-                            modelForGuess.makeGuess(userGuess);
-                        } catch (InvalidGuessException ige) {
-                            // Check to make sure a new puzzle hasn't been loaded
-                            if (modelForGuess.getPuzzleId() == model.getPuzzleId()) { 
-                                tm.editGuessRow(index, "Invalid Guess");
-                                onTableUpdate();
-                                showDialog(ige.getMessage(), "JottoGame Message", JOptionPane.ERROR_MESSAGE);
-                            }
-                            //tm.addGuessRow("Invalid Guess", null);
-                            return;
-                        } catch (PuzzleIdException pie){
-                            showDialog(pie.getMessage() + "\r\n A new puzzle has been loaded", 
-                                    "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                            model = new JottoModel();
-                            tm.clearTable();
-                            return;
-                        } catch (IOException e1) {
-                            showDialog(e1.getMessage(), 
-                                    "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                            return;
-                        }
-                        String correctPos = modelForGuess.getLastGuessCorrectPos();
-                        String commonResult = modelForGuess.getLastGuessCommonResult();
-                        // Winning condition check
-                        if (correctPos.equals("5") && commonResult.equals("5")) {
-                            // Checking if we're still in the same game.
-                            if (modelForGuess.getPuzzleId() == model.getPuzzleId()) { 
-                                tm.editGuessRow(index, "You Win!");
-                                onTableUpdate();
-                                showDialog("You win! The secret was: " + userGuess + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
-                            }
-                        }
-                        else{
-                            if (modelForGuess.getPuzzleId() == model.getPuzzleId()) {
-                                tm.editGuessRow(index, modelForGuess.getLastGuessCorrectPos(), modelForGuess.getLastGuessCommonResult());
-                                onTableUpdate();
-                            }
-                        }
-                    }
-                }.start();
+                handleGuessHelper();
             }
         });
         
         //TODO lock on tableModel  
         
-        buildLayout();
+        buildLayout(layout);
     }
     
     /**
      * Method to build Swing layout via the GroupLayout class
+     * @param the GroupLayout to layout, associated with a contentPane
      */
-    private void buildLayout() {
+    private void buildLayout(GroupLayout layout) {
         // LAYOUT 
+        layout.setAutoCreateGaps(true);
+        layout.setAutoCreateContainerGaps(true);
+        
         layout.setVerticalGroup(
             layout.createSequentialGroup()
             .addGroup(
@@ -247,6 +193,70 @@ public class JottoGUI extends JFrame {
         puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
         tm.clearTable();
         onTableUpdate();
+    }
+    
+    /**
+     * When enter is pressed on the guess JTextField, make a guess on the 
+     * JottoModel with the contents of the textField. Display errors on the 
+     * table when a guess is invalid by catching the exceptions makeGuess throws.
+     * 
+     * If the guess is correct, alert the user with a new window and by placing it
+     * in the table, then reset the game. 
+     * 
+     * Spawn a new thread for each guess so that the GUI doesn't hang and the user
+     * can still make additional guesses. Make sure before each update to the table,
+     * the user is still playing the same game. 
+     */
+    private void handleGuessHelper() {
+        new Thread() {
+            public void run() {
+                JottoModel modelForGuess = new JottoModel(model.getPuzzleId());
+                String userGuess = guess.getText();
+                guess.setText(""); // reset box to empty
+                int rowIndex = tm.addGuessRow(userGuess, null);
+                onTableUpdate();
+                
+                try {
+                    // blocking step - subsequent edits to the table must check 
+                    // if we're still playing the same game. 
+                    modelForGuess.makeGuess(userGuess);
+                } catch (InvalidGuessException ige) {
+                    // Checking if we're still in the same game.
+                    if (modelForGuess.getPuzzleId() == model.getPuzzleId()) { 
+                        tm.editGuessRow(rowIndex, "Invalid Guess");
+                        onTableUpdate();
+                        showDialog(ige.getMessage(), "JottoGame Message", JOptionPane.ERROR_MESSAGE);
+                    }
+                    return;
+                } catch (PuzzleIdException pie){
+                    showDialog(pie.getMessage() + "\r\n A new puzzle has been loaded", 
+                            "JottoGame Error", JOptionPane.ERROR_MESSAGE);
+                    model = new JottoModel();
+                    tm.clearTable();
+                    return;
+                } catch (IOException e1) {
+                    showDialog(e1.getMessage(), "JottoGame Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                
+                String correctPos = modelForGuess.getLastGuessCorrectPos();
+                String commonResult = modelForGuess.getLastGuessCommonResult();
+                
+                // Checking if we're still in the same game.
+                if (modelForGuess.getPuzzleId() == model.getPuzzleId()) {
+                    // Winning condition check
+                    if (correctPos.equals("5") && commonResult.equals("5")) {
+                        tm.editGuessRow(rowIndex, "You Win!");
+                        showDialog("You win! The secret was: " + userGuess + "!", 
+                                "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
+                    } else{
+                        tm.editGuessRow(rowIndex, modelForGuess.getLastGuessCorrectPos(), 
+                                modelForGuess.getLastGuessCommonResult());
+                    }
+                    onTableUpdate();
+                }
+            }
+        }.start();
     }
 
     public static void main(final String[] args) {
