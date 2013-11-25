@@ -275,7 +275,7 @@ class JottoTableModel extends AbstractTableModel {
     
     public JottoTableModel(){
         super();
-        addGuessRow("Guess", "Common Characters", "Correct Positions");
+        addGuessRow("Guess", "Correct Positions", "Common Characters");
     }
     
     public int getRowCount() {
@@ -354,7 +354,7 @@ class JottoTableModel extends AbstractTableModel {
      */
     public void clearTable() {
         data = new ArrayList<List<String>>();
-        addGuessRow("Guess", "Common Characters", "Correct Positions");
+        addGuessRow("Guess", "Correct Positions", "Common Characters");
     }
 }
 
