@@ -34,11 +34,9 @@ public class JottoGUI extends JFrame {
     private final JLabel puzzleNumber;
     private final JTextField guess;
     private final JTable guessTable;
-    
-    //private final GroupLayout layout;
     private final JLabel guessLabel;
-    private final JottoTableModel tm;
     
+    private final JottoTableModel tm;
     private JottoModel model;
 
     public JottoGUI() {
