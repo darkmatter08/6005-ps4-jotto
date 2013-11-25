@@ -77,11 +77,6 @@ public class JottoGUI extends JFrame {
         
         // REGISTER LISTENERS
 
-        /*
-         *  When the newPuzzleButton is pressed, check the contents of
-         *  the newPuzzleNumber field. If it's empty, then load a random
-         *  puzzle. Otherwise load the puzzle number from the newPuzzleNumber 
-         */
         newPuzzleButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 newPuzzleButtonHelper();
@@ -106,16 +101,16 @@ public class JottoGUI extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 new Thread() {
                     public void run() {
-                        JottoModel newModel = new JottoModel(model.getPuzzleId());
+                        JottoModel modelForGuess = new JottoModel(model.getPuzzleId());
                         String userGuess = guess.getText();
                         guess.setText(""); // reset box to empty
                         int index = tm.addGuessRow(userGuess, null);
                         onTableUpdate();
                         try {
-                            newModel.makeGuess(userGuess);
+                            modelForGuess.makeGuess(userGuess);
                         } catch (InvalidGuessException ige) {
                             // Check to make sure a new puzzle hasn't been loaded
-                            if (newModel.getPuzzleId() == model.getPuzzleId()) { 
+                            if (modelForGuess.getPuzzleId() == model.getPuzzleId()) { 
                                 tm.editGuessRow(index, "Invalid Guess");
                                 onTableUpdate();
                                 showDialog(ige.getMessage(), "JottoGame Message", JOptionPane.ERROR_MESSAGE);
@@ -133,20 +128,20 @@ public class JottoGUI extends JFrame {
                                     "JottoGame Error", JOptionPane.ERROR_MESSAGE);
                             return;
                         }
-                        String correctPos = newModel.getLastGuessCorrectPos();
-                        String commonResult = newModel.getLastGuessCommonResult();
+                        String correctPos = modelForGuess.getLastGuessCorrectPos();
+                        String commonResult = modelForGuess.getLastGuessCommonResult();
                         // Winning condition check
                         if (correctPos.equals("5") && commonResult.equals("5")) {
                             // Checking if we're still in the same game.
-                            if (newModel.getPuzzleId() == model.getPuzzleId()) { 
+                            if (modelForGuess.getPuzzleId() == model.getPuzzleId()) { 
                                 tm.editGuessRow(index, "You Win!");
                                 onTableUpdate();
                                 showDialog("You win! The secret was: " + userGuess + "!", "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
                             }
                         }
                         else{
-                            if (newModel.getPuzzleId() == model.getPuzzleId()) {
-                                tm.editGuessRow(index, newModel.getLastGuessCorrectPos(), newModel.getLastGuessCommonResult());
+                            if (modelForGuess.getPuzzleId() == model.getPuzzleId()) {
+                                tm.editGuessRow(index, modelForGuess.getLastGuessCorrectPos(), modelForGuess.getLastGuessCommonResult());
                                 onTableUpdate();
                             }
                         }
@@ -154,12 +149,16 @@ public class JottoGUI extends JFrame {
                 }.start();
             }
         });
-        //TODO new puzzle button doesn't clear table //done
-        //TODO newPuzzleNumber enter should trigger new puzzle //done
-        //TODO lock on tableModel
-        //TODO make sure that when we're dealing with the table (after the possible blocking 
-        //      operation of makeGuess()) the puzzle is still the same. //done  
         
+        //TODO lock on tableModel  
+        
+        buildLayout();
+    }
+    
+    /**
+     * Method to build Swing layout via the GroupLayout class
+     */
+    private void buildLayout() {
         // LAYOUT 
         layout.setVerticalGroup(
             layout.createSequentialGroup()
@@ -169,7 +168,7 @@ public class JottoGUI extends JFrame {
                     .addComponent(newPuzzleButton)
                     .addComponent(newPuzzleNumber)
             ).addGroup(
-                layout.createParallelGroup(GroupLayout.Alignment.BASELINE) // TODO remove for table fix
+                layout.createParallelGroup(GroupLayout.Alignment.BASELINE) 
                     .addComponent(guessLabel)
                     .addComponent(guess)
             ).addGroup(
@@ -200,8 +199,8 @@ public class JottoGUI extends JFrame {
                     .addComponent(guessTable)
             )
         );
-        
-        this.pack();
+            
+        onTableUpdate();
     }
     
     /**
@@ -223,42 +222,37 @@ public class JottoGUI extends JFrame {
         JOptionPane.showMessageDialog(this, message, title, messageType);
     }
     
+    /**
+     *  When the newPuzzleButton is pressed OR enter is typed on the newPuzzleNumber
+     *  text field, check the contents of the newPuzzleNumber field. If it's empty, 
+     *  then load a random puzzle. Otherwise load the puzzle number from the newPuzzleNumber 
+     */
     private void newPuzzleButtonHelper() {
         String puzzleString = newPuzzleNumber.getText();
         newPuzzleNumber.setText("");
-        if (puzzleString == null || puzzleString.equals("")) {
+        if (puzzleString == null || puzzleString.equals(""))
             model = new JottoModel();
-            puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
-            tm.clearTable();
-            onTableUpdate();
-        } else {
+        else {
             try{
                 int puzzle = Integer.parseInt(puzzleString);
-                if (puzzle >= 0) {
+                if (puzzle >= 0) 
                     model = new JottoModel(puzzle);
-                    puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
-                    tm.clearTable();
-                    onTableUpdate();
-                }
-                else { // bad input
-                    model = new JottoModel();
-                    puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
-                }
-                
+                else // bad input
+                    throw new NumberFormatException("Puzzle number must be greater than 0");
             } catch (NumberFormatException ne) {
                 showDialog("Bad Puzzle Number Input", "JottoGame Error", JOptionPane.ERROR_MESSAGE);
-                //ne.printStackTrace();
-                newPuzzleNumber.setText("");
                 return;
             }
         }
+        puzzleNumber.setText("Puzzle # " + model.getPuzzleId());
+        tm.clearTable();
+        onTableUpdate();
     }
 
     public static void main(final String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 JottoGUI main = new JottoGUI();
-                main.setSize(400, 300);
                 main.setVisible(true);
             }
         });
