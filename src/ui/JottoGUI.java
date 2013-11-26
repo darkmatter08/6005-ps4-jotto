@@ -208,7 +208,7 @@ public class JottoGUI extends JFrame {
     private void newPuzzleButtonHelper() {
         String puzzleString = newPuzzleNumber.getText();
         newPuzzleNumber.setText("");
-        if (puzzleString == null || puzzleString.equals(""))
+        if (puzzleString == null || puzzleString.equals("")) // random puzzle case
             model = new JottoModel();
         else {
             try{
