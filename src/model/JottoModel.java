@@ -4,7 +4,16 @@ import java.net.*;
 import java.io.*;
 
 /**
- * // TODO Write specifications for your JottoModel!
+ * JottoModel represents a Jotto game. The puzzles are stored on a server at
+ * csail.mit.edu. Each puzzle is represented by a puzzle id. Every instance of 
+ * this class can only have 1 puzzle assigned to it, decided at the time of instantiation
+ * The client calls makeGuess to make a guess, and then calls getLastGuess*() to 
+ * get the results from the previous guess.
+ * 
+ * This implementation is NOT thread safe, since the class's instance fields 
+ * could be modified concurrently, and users of different threads are uncertain 
+ * as to which guess corresponds to the data returned by getLastGuess*(). For 
+ * the implementation of JottoGame, all thread safety is handled by the GUI entirely. 
  */
 public class JottoModel {
     
@@ -30,16 +39,6 @@ public class JottoModel {
         String PUZZLE_QS = "puzzle=";
         String GUESS_QS = "&guess=";
         GAME_URL = BASE_URL + PUZZLE_QS + new Integer(puzzle).toString() + GUESS_QS;
-        
-        
-        // check that the puzzle they provided is valid, otherwise pass the  
-        // PuzzleIdException or IOException up the stack. This way the public
-        // makeGuess method will only generally throw a PuzzleIdException 
-        // and maybe an IOException if there's a network error, not due to
-        // a malformed URL
-//        makeGuess("tests");
-//        lastGuessCorrectPos = null;
-//        lastGuessCommonResult = null;
     }
     
     /**
@@ -73,7 +72,7 @@ public class JottoModel {
                 throw new InvalidGuessException("Invalid guess. Length of guess != 5 or guess is not a dictionary word.");
         }
         
-        // Should never reach here
+        throw new IOException("Misformatted server response");
     }
     
     /**
@@ -98,6 +97,9 @@ public class JottoModel {
         return lastGuessCommonResult;
     }
     
+    /**
+     * @return int representing the instance's current puzzle
+     */
     public int getPuzzleId() {
         return puzzleId;
     }
