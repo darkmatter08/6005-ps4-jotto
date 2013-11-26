@@ -211,7 +211,7 @@ public class JottoGUI extends JFrame {
                 JottoModel modelForGuess = new JottoModel(model.getPuzzleId());
                 String userGuess = guess.getText();
                 guess.setText(""); // reset box to empty
-                int rowIndex = tm.addGuessRow(userGuess, null);
+                int rowIndex = tm.addGuessRow(userGuess);
                 onTableUpdate();
                 
                 try {
@@ -248,8 +248,8 @@ public class JottoGUI extends JFrame {
                         showDialog("You win! The secret was: " + userGuess + "!", 
                                 "JottoGame Message", JOptionPane.PLAIN_MESSAGE);
                     } else{
-                        tm.editGuessRow(rowIndex, modelForGuess.getLastGuessCorrectPos(), 
-                                modelForGuess.getLastGuessCommonResult());
+                        tm.editGuessRow(rowIndex, modelForGuess.getLastGuessCommonResult(), 
+                                modelForGuess.getLastGuessCorrectPos());
                     }
                     onTableUpdate();
                 }
@@ -277,7 +277,7 @@ class JottoTableModel extends AbstractTableModel {
     
     public JottoTableModel(){
         super();
-        addGuessRow("Guess", "Correct Positions", "Common Characters");
+        addGuessRow("Guess", "Common Characters", "Correct Positions");
     }
     
     public int getRowCount() {
@@ -291,33 +291,23 @@ class JottoTableModel extends AbstractTableModel {
     public Object getValueAt(int rowIndex, int columnIndex) {
         return data.get(rowIndex).get(columnIndex);
     }
-    
-    /**
-     * Shortcut method for addGuessRow, only 1 or 2 entries
-     * @param guess col1 String
-     * @param col2 String, ok to be null if you only want 1 entry
-     * @return int index of row added
-     */
-    public int addGuessRow(String guess, String col2) {
-        return addGuessRow(guess, col2, null);
-    }
-    
+      
     /**
      * Adds in a new row
-     * @param guess col1 String
-     * @param correctPos col2 String
-     * @param commonResult col3 String
+     * @param c0 col0 String
+     * @param c1 col1 String
+     * @param c2 col2 String
      * @return int index of row added
      */
-    public int addGuessRow(String guess, String correctPos, String commonResult) {
+    public int addGuessRow(String c0, String c1, String c2) {
         List<String> row = new ArrayList<String>();
-        row.add(guess);
-        if (commonResult != null)
-            row.add(commonResult);
+        row.add(c0);
+        if (c1 != null)
+            row.add(c1);
         else
             row.add("");
-        if (correctPos != null)
-            row.add(correctPos);
+        if (c2 != null)
+            row.add(c2);
         else
             row.add("");
         data.add(row);
@@ -325,30 +315,31 @@ class JottoTableModel extends AbstractTableModel {
     }
     
     /**
-     * Shortcut method for addGuessRow
-     * @param guess col1 String
-     * @param correctPos col2 int
-     * @param commonResult col3 int
+     * Shortcut method for addGuessRow, only 1 or 2 entries
+     * @param guess col0 String
      * @return int index of row added
      */
-    public int addGuessRow(String guess, int correctPos, int commonResult) {
-        return addGuessRow(guess, Integer.toString(correctPos), Integer.toString(commonResult));
+    public int addGuessRow(String guess) {
+        return addGuessRow(guess, null, null);
     }
     
-    public void editGuessRow(int index, String correctPos, String commonResult) {
+    public void editGuessRow(int index, String c1, String c2) {
         // check if that row still exists, and if so, update it, otherwise 
         // do nothing for this edit request
         if (data.size() > index) {
-            data.get(index).set(2, correctPos);
-            if (commonResult != null)
-                data.get(index).set(1, commonResult); 
+            if (c1 != null)
+                data.get(index).set(1, c1); 
             else
                 data.get(index).set(1, "");
+            if (c2 != null)
+                data.get(index).set(2, c2);
+            else
+                data.get(index).set(2, "");
         } 
     }
     
-    public void editGuessRow(int index, String col2) {
-        editGuessRow(index, null, col2);
+    public void editGuessRow(int index, String c1) {
+        editGuessRow(index, c1, null);
     }
     
     /**
@@ -356,7 +347,7 @@ class JottoTableModel extends AbstractTableModel {
      */
     public void clearTable() {
         data = new ArrayList<List<String>>();
-        addGuessRow("Guess", "Correct Positions", "Common Characters");
+        addGuessRow("Guess", "Common Characters", "Correct Positions");
     }
 }
 
