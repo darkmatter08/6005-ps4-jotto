@@ -32,7 +32,8 @@ import model.*;
  * entering a word not of length 5, he will see an error window, as well as recording
  * the invalid guess on the table. 
  * 
- * He can use the keyboard or the mouse to interact with the UI.
+ * He can use the keyboard or the mouse to interact with the UI. He must resize the window
+ *  if it takes him more than 15 guesses to see the full table. 
  * 
  * It remains responsive even when there is a slow server connection, via multithreading.
  * The user can continue to make guesses even when the server is slow, and the UI will
@@ -301,33 +302,54 @@ public class JottoGUI extends JFrame {
 }
 
 /**
- * Table Model for the guessTable. Dynamically sized. 
+ * Table Model for the guessTable. Dynamically sized, and rows can be edited after addition.
  * @author jains
  *
  */
 class JottoTableModel extends AbstractTableModel {
     private List<List<String>> data = new ArrayList<List<String>>();
     
+    /**
+     * Constructor that adds the Jotto Game header row
+     */
     public JottoTableModel(){
         super();
         addGuessRow("Guess", "Common Characters", "Correct Positions");
     }
     
+    /**
+     * @return int representing the number of rows in the table
+     * @override AbstractTableModel.getRowCount() 
+     * @see AbstractTableModel
+     * java disallows the override annotation for some reason here
+     */
     public int getRowCount() {
         return data.size();
     }
 
+    /**
+     * @return int representing the number of columns in the table
+     * @override AbstractTableModel.getColumnCount ()
+     * @see AbstractTableModel
+     * java disallows the override annotation for some reason here
+     */
     public int getColumnCount() {
         return data.get(0).size();
     }
-
+    
+    /**
+     * @return Object representing the cell at that positon
+     * @override AbstractTableModel.getValueAt() 
+     * @see AbstractTableModel
+     * java disallows the override annotation for some reason here
+     */
     public Object getValueAt(int rowIndex, int columnIndex) {
         return data.get(rowIndex).get(columnIndex);
     }
       
     /**
-     * Adds in a new row
-     * @param c0 col0 String
+     * Adds in a new row at the bottom of the table
+     * @param c0 col0 String. Must not be null.
      * @param c1 col1 String
      * @param c2 col2 String
      * @return int index of row added
@@ -348,14 +370,21 @@ class JottoTableModel extends AbstractTableModel {
     }
     
     /**
-     * Shortcut method for addGuessRow, only 1 or 2 entries
-     * @param guess col0 String
+     * Shortcut to add a row to the bottom of a table, with only
+     *  the 0th column filled. 
+     * @param guess col0 String. Must not be null
      * @return int index of row added
      */
     public int addGuessRow(String guess) {
         return addGuessRow(guess, null, null);
     }
     
+    /**
+     * Edit the row at index. 
+     * @param index int row to be edited.
+     * @param c1 String to set col1 to. 
+     * @param c2 String to set col2 to. 
+     */
     public void editGuessRow(int index, String c1, String c2) {
         // check if that row still exists, and if so, update it, otherwise 
         // do nothing for this edit request
@@ -371,6 +400,11 @@ class JottoTableModel extends AbstractTableModel {
         } 
     }
     
+    /**
+     * Edit the row at this index, only changing the contents of col1
+     * @param index int row to be edited.
+     * @param c1 String to set col1 to. 
+     */
     public void editGuessRow(int index, String c1) {
         editGuessRow(index, c1, null);
     }
