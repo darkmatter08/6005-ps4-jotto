@@ -21,14 +21,49 @@ import javax.swing.table.AbstractTableModel;
 import model.*;
 
 /**
- * // TODO Write specifications for your JottoGUI class.
- * // Remember to name all your components, otherwise autograder will give a zero.
- * // Remember to use the objects newPuzzleButton, newPuzzleNumber, puzzleNumber,
- * // guess, and guessTable in your GUI!
+ * JottoGUI provides a GUI to play the JottoGame that's represented JottoModel. 
+ * A user can select a puzzle by it's puzzle number, or he can play a random puzzle
+ * His guesses and their result - the number of characters in common and the number 
+ * of characters in the correct position - will appear in a table for the user to see.
+ * The table records all his guesses, making it easy for him to reference his past 
+ * guesses and their results. 
+ * If he wins, a window will alert him, as well as appearing on the feedback table. 
+ * If he makes an invalid submission, such as entering a non-dictionary word or 
+ * entering a word not of length 5, he will see an error window, as well as recording
+ * the invalid guess on the table. 
+ * 
+ * He can use the keyboard or the mouse to interact with the UI.
+ * 
+ * It remains responsive even when there is a slow server connection, via multithreading.
+ * The user can continue to make guesses even when the server is slow, and the UI will
+ * update when the server returns the result.
+ * 
+ * THREAD SAFETY: 
+ * The blocking code in the program is the call to the JottoModel model.makeGuess() 
+ *  as it may wait to return from the server. This implementation deals with this 
+ *  problem by spawning a new thread for each guess request by the user. Because 
+ *  JottoModel is not threadsafe (my design decision) since it updates it's instance 
+ *  fields after each makeGuess() request completes, this implementation creates
+ *  a new instance of JottoModel for each thread, whose lifetime is the same as the
+ *  thread. The JottoModel that is stored in the JottoGUI isn't used to make requests
+ *  to the server - rather it is used to keep track of which puzzle the user is 
+ *  currently playing. 
+ *  
+ * The data that could be modified concurrently is the JottoTableModel. However, 
+ *  there is no need to lock on that object since each thread modifies it's own row 
+ *  only. Each thread 'claims' it's row because it only modifies the row it added. 
+ * The only time this could be in conflict is when there is a long running makeGuess() 
+ *  request occurring (i.e. with *) and meanwhile a user loads a new puzzle and makes 
+ *  a short guess. Then these two threads could have the same row. However, every 
+ *  thread enforces the claiming condition by checking that the puzzle that the guess 
+ *  was made on is the same as the current guess. With that check, there can only be
+ *  1 thread that claims each row. Thus no need for locking the data - and the 
+ *  implementation is thread safe. 
+ * 
+ * @author jains
  */
 public class JottoGUI extends JFrame {
 
-    // remember to use these objects in your GUI:
     private final JButton newPuzzleButton;
     private final JTextField newPuzzleNumber;
     private final JLabel puzzleNumber;
@@ -89,8 +124,6 @@ public class JottoGUI extends JFrame {
                 handleGuessHelper();
             }
         });
-        
-        //TODO lock on tableModel  
         
         buildLayout(layout);
     }
